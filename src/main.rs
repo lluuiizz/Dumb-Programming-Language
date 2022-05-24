@@ -213,8 +213,14 @@ fn sum(stack: &mut Vec<i64>) {
         );
         process::exit(-1);
     }
+    
+    let (result, overflow): (i64, bool) = stack[len - 2].overflowing_add(stack[len - 1]);
 
-    let result = stack[len - 2] + stack[len - 1];
+    if overflow {
+        println!("Sum exceeded the limits of i64!!!");
+        process::exit(-1);
+    }
+
     stack.pop();
     stack.pop();
     stack.push(result);
@@ -231,7 +237,15 @@ fn sub(stack: &mut Vec<i64>) {
         process::exit(-1);
     }
 
-    let result = stack[len - 2] - stack[len - 1];
+    let (result, overflow): (i64, bool) = stack[len - 2].overflowing_sub(stack[len - 1]);
+
+    if overflow {
+        println!("Subtract exceeded the limits of i64!!!");
+        process::exit(-1);
+    }
+
+
+
     stack.pop();
     stack.pop();
     stack.push(result);
@@ -248,7 +262,14 @@ fn multy(stack: &mut Vec<i64>) {
         process::exit(-1);
     }
 
-    let result = stack[len - 2] * stack[len - 1];
+    let (result, overflow): (i64, bool) = stack[len - 2].overflowing_mul(stack[len - 1]);
+
+    if overflow {
+        println!("Multiplication exceeded the limits of i64!!!");
+        process::exit(-1);
+    }
+
+
     stack.pop();
     stack.pop();
     stack.push(result);
@@ -265,7 +286,14 @@ fn div(stack: &mut Vec<i64>) {
         process::exit(-1);
     }
 
-    let result = stack[len - 2] / stack[len - 1];
+    let (result, overflow): (i64, bool) = stack[len - 2].overflowing_div(stack[len - 1]);
+
+    if overflow {
+        println!("Division exceeded the limits of i64!!!");
+        process::exit(-1);
+    }
+
+
     stack.pop();
     stack.pop();
     stack.push(result);
