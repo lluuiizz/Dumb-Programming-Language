@@ -1,7 +1,0 @@
-3 50 loop
-    dup print 3 *
-end
-
-
-
-
