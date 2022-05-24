@@ -1,0 +1,4 @@
+3 10 loop
+    dup print 3 *
+
+end
