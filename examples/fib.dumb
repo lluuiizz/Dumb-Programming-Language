@@ -1,0 +1,9 @@
+0 -> f int end
+1 -> s int end
+
+55 loop
+    f print
+    f s + -> nth int end
+    s -> f int end
+    nth -> s int end
+end
