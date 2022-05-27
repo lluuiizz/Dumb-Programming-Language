@@ -1,0 +1,4 @@
+10 -> number1 int end
+20 -> number2 int end
+
+number1 number2 * print
