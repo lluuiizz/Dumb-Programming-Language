@@ -2,18 +2,19 @@ use std::env;
 use std::fs;
 use std::process;
 
+            //  Definitions of tokens recognizables by the tokenizer 
 const KEYWORDS: &'static [&'static str] =
     &["print", "dup", "swap", "over", "drop", "->", "loop", "end"];
 const OPERATIONS: &'static [&'static str] = &["+", "-", "*", "/", "%"];
 const TYPES: &'static [&'static str] = &["int"];
-
+            //  Defining the int variables who goes to the stack
 struct Declaration {
     identifier: String,
     value: i64,
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = env::args().collect();      
 
     if args.len() < 2 {
         println!("Missing argument!!!");
@@ -38,7 +39,7 @@ fn main() {
     }
 
     let contents = fs::read_to_string(file).expect("Error at reading file");
-    let mut tokens: Vec<String> = Vec::new();
+    let mut tokens: Vec<String> = Vec::new();       //  Vectors who stores the tokens given to the tokenizer
 
     tokenizer(&contents, &mut tokens);
 
@@ -47,8 +48,8 @@ fn main() {
     interpreter(&mut stack, &tokens, &mut declarations);
 }
 
-fn tokenizer(contents: &String, tokens_vector: &mut Vec<String>) {
-    let mut last_token: usize = 0;
+fn tokenizer(contents: &String, tokens_vector: &mut Vec<String>){       //  The only thing that this function does is check if the token given is a separator and the anterior token is not, case true saves 
+    let mut last_token: usize = 0;                                      //  a new token in the vector, case false the loop continues...
     let contents_as_bytes = contents.as_bytes();
 
     for (i, ch) in contents.chars().enumerate() {
@@ -68,22 +69,27 @@ fn tokenizer(contents: &String, tokens_vector: &mut Vec<String>) {
     }
 }
 
-fn is_separator(ch: char) -> bool {
+fn is_separator(ch: char) -> bool {         //  Checks if a char is a separator
     match ch {
         ' ' | ';' | '\n' | '\t' | '\\' | '\x7f' | '\r' | '\0' => true,
         _ => false,
     }
 }
 
-fn interpreter(stack: &mut Vec<i64>, tokens: &Vec<String>, declarations: &mut Vec<Declaration>) {
-    let mut token_slice_init: usize = 0;
-    let mut token_slice_finish: usize;
+fn interpreter(stack: &mut Vec<i64>, tokens: &Vec<String>, declarations: &mut Vec<Declaration>) {       //  This function basically will certify that the token is a valid one, then will call a function who 
+    let mut token_slice_init: usize = 0;                                                                //  does what the token is intend for, and then repeat until reaches the last token. If a token is not
+    let mut token_slice_finish: usize;                                                                  //  a valid one, then the loop finishes and the program gives an error message!
 
-    enum States {
-        LOOP,
-        ASSIGNMENT,
-        NOTHING,
-    }
+    enum States {           //  States is how the interpreter knows what he is doing in the moment
+        LOOP,               //  When he is in a loop state for example, the interpreter will search the token who
+        ASSIGNMENT,         //  Ends the LOOP, then the interpreter pass a vector slice containing the tokens
+        NOTHING,            //  that were inside the loop to the function "loop_instructions", who will recursively calls interpreter again
+                            //  but only passing the new vector slice as arguments, when the loop
+                            //  ends, the main interpreter session returns where he stopped.
+    }                       //  Obs: To make nested loops possible the interpreter, when the state is an LOOP one, will search the last END keyword
+                            //  and then make a vector slice from there, in the vector slice will
+                            //  contain another loop, who when the interpreter be executed again,
+                            //  will do the same thing
 
     let mut search_state = States::NOTHING as u8;
 
@@ -166,17 +172,23 @@ fn interpreter(stack: &mut Vec<i64>, tokens: &Vec<String>, declarations: &mut Ve
                     };
                     continue;
                 }
-
+                let mut encountered_in_declaration: bool = false;
                 for declaration in declarations.iter() {
                     if *token == declaration.identifier {
                         stack.push(declaration.value);
+                        encountered_in_declaration = true;
+                        break;
                     }
+                }
+                if !encountered_in_declaration {
+                    println!("Token unknown \"{}\". Exiting with error!", token);
+                    process::exit(-1);
                 }
             }
         }
     }
 }
-fn print_stack(stack: &mut Vec<i64>) {
+fn print_stack(stack: &mut Vec<i64>) {  //  Print the element in the top of the stack
     let len = stack.len();
     if len < 1 {
         println!("ERROR: STACK EMPTY!");
@@ -187,7 +199,7 @@ fn print_stack(stack: &mut Vec<i64>) {
     stack.pop().unwrap();
 }
 
-fn duplicate(stack: &mut Vec<i64>) {
+fn duplicate(stack: &mut Vec<i64>) {    //  Duplicate the element in the top of the stack
     let len = stack.len();
 
     if len < 1 {
@@ -198,7 +210,7 @@ fn duplicate(stack: &mut Vec<i64>) {
     stack.push(stack[len - 1]);
 }
 
-fn swap(stack: &mut Vec<i64>) {
+fn swap(stack: &mut Vec<i64>) {         //  Swap the two first elements of the stack
     let len = stack.len();
 
     if len < 2 {
@@ -213,7 +225,7 @@ fn swap(stack: &mut Vec<i64>) {
     stack[len - 2] = buff;
 }
 
-fn over(stack: &mut Vec<i64>) {
+fn over(stack: &mut Vec<i64>) {         //  Copy the element bellow the top of the stack to the top
     let len = stack.len();
 
     if len < 2 {
@@ -227,7 +239,7 @@ fn over(stack: &mut Vec<i64>) {
     stack.push(stack[len - 2]);
 }
 
-fn drop_top(stack: &mut Vec<i64>) {
+fn drop_top(stack: &mut Vec<i64>) {     //  Drop the element in the top of the stack
     let len = stack.len();
 
     if len < 1 {
@@ -238,7 +250,7 @@ fn drop_top(stack: &mut Vec<i64>) {
     stack.pop().unwrap();
 }
 
-fn sum(stack: &mut Vec<i64>) {
+fn sum(stack: &mut Vec<i64>) {          //  Sum the first two elements in the top of the stack and drop them, then puts the result in the top 
     let len = stack.len();
 
     if len < 2 {
@@ -261,7 +273,8 @@ fn sum(stack: &mut Vec<i64>) {
     stack.push(result);
 }
 
-fn sub(stack: &mut Vec<i64>) {
+fn sub(stack: &mut Vec<i64>) {           //  Subtract the first two elements in the top of the stack and drop them, then puts the result in the top 
+
     let len = stack.len();
 
     if len < 2 {
@@ -284,7 +297,8 @@ fn sub(stack: &mut Vec<i64>) {
     stack.push(result);
 }
 
-fn multy(stack: &mut Vec<i64>) {
+fn multy(stack: &mut Vec<i64>) {           //  Multiply the first two elements in the top of the stack and drop them, then puts the result in the top 
+
     let len = stack.len();
 
     if len < 2 {
@@ -307,7 +321,8 @@ fn multy(stack: &mut Vec<i64>) {
     stack.push(result);
 }
 
-fn div(stack: &mut Vec<i64>) {
+fn div(stack: &mut Vec<i64>) {           //  Divide the first two elements in the top of the stack and drop them, then puts the result in the top 
+
     let len = stack.len();
 
     if len < 2 {
@@ -330,7 +345,7 @@ fn div(stack: &mut Vec<i64>) {
     stack.push(result);
 }
 
-fn rdiv(stack: &mut Vec<i64>) {
+fn rdiv(stack: &mut Vec<i64>) {            //  Takes the rest of division of the first two elements in the top of the stack and drop them, then puts the result in the top 
     let len = stack.len();
 
     if len < 2 {
@@ -347,7 +362,7 @@ fn rdiv(stack: &mut Vec<i64>) {
     stack.push(result);
 }
 
-fn assignment(stack: &mut Vec<i64>, declarations: &mut Vec<Declaration>, token_slice: &[String]) {
+fn assignment(stack: &mut Vec<i64>, declarations: &mut Vec<Declaration>, token_slice: &[String]) {      //  Assign the value in the top of the stack to a variable
     if token_slice.len() < 2 {
         println!("Too few arguments to variable assignment!");
         process::exit(-1);
@@ -399,7 +414,7 @@ fn assignment(stack: &mut Vec<i64>, declarations: &mut Vec<Declaration>, token_s
     stack.pop();
 }
 
-fn loop_instructions(
+fn loop_instructions(       //  Loop x number of instructions n times given by the top of the stack
     stack: &mut Vec<i64>,
     instructions: &[String],
     declarations: &mut Vec<Declaration>,
