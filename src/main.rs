@@ -53,9 +53,19 @@ fn tokenizer(contents: &String, tokens_vector: &mut Vec<String>) {
     //  The only thing that this function does is check if the token given is a separator and the anterior token is not, case true saves
     let mut last_token: usize = 0; //  a new token in the vector, case false the loop continues...
     let contents_as_bytes = contents.as_bytes();
+    let mut initial_quote = true;
 
     for (i, ch) in contents.chars().enumerate() {
-        if i != 0 {
+        if ch == '"' && initial_quote{
+            last_token = i;
+            initial_quote = false;
+        }
+        else if ch =='"' && !initial_quote {
+            tokens_vector.push(contents[last_token..i+1].to_string());
+            last_token = i;
+            initial_quote = true;
+        }
+        else if i != 0 && initial_quote{
 
             let can_insert_new_token =
                 is_separator(ch) && !is_separator(contents_as_bytes[i - 1] as char);
@@ -70,6 +80,7 @@ fn tokenizer(contents: &String, tokens_vector: &mut Vec<String>) {
             }
         }
     }
+
 }
 
 fn is_separator(ch: char) -> bool {
@@ -97,6 +108,7 @@ fn interpreter(
         NOTHING, //  that were inside the loop to the function "loop_instructions", who will recursively calls interpreter again
                  //  but only passing the new vector slice as arguments, when the loop
                  //  ends, the main interpreter session returns where he stopped.
+                 //
     } //  Obs: To make nested loops possible the interpreter, when the state is an LOOP one, will search the last END keyword
       //  and then make a vector slice from there, in the vector slice will
       //  contain another loop, who when the interpreter be executed again,
@@ -105,13 +117,12 @@ fn interpreter(
     let mut search_state = States::NOTHING as u8;
 
     for (i, token) in tokens.iter().enumerate() {
-        if token.chars().all(char::is_numeric) && search_state == States::NOTHING as u8 {
+        if token.as_bytes()[0] as char == '"' {
+            string_pool.push(token[1..].to_string());
+        }
+        else if token.chars().all(char::is_numeric) && search_state == States::NOTHING as u8 {
             stack.push(token.parse().unwrap());
-        } else if token.as_bytes()[0] == ('"' as u8)
-        {
-            let len = token.len();
-            string_pool.push(token[1..len-1].to_string());
-        } else {
+        }  else {
             let find_in_keywords = KEYWORDS.iter().find(|&x| x == token);
             let find_in_keywords = match find_in_keywords {
                 Option::Some(result) => result,
@@ -391,7 +402,9 @@ fn rdiv(stack: &mut Vec<i64>) {
 }
 
 fn puts(string_pool: &Vec<String>) {
-    println!("{}", string_pool[string_pool.len() - 1])
+    let len = string_pool[string_pool.len()-2].len();
+    let other_len = string_pool.len();
+    println!("{}", string_pool[other_len - 2][..len-1].to_string());
 }
 
 fn assignment(stack: &mut Vec<i64>, declarations: &mut Vec<Declaration>, token_slice: &[String]) {
